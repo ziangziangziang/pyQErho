@@ -1,2 +1,11 @@
-# pyQErho
-python code to generate charge density initial guess for Quantum Espresso
+qespresso:
+    The module is designed to generate initial guess charge density for quantum-espresso
+    To use:
+
+        ```
+        import sad
+        ```
+
+
+
+
