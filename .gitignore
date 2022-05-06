@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.out
+PSEUDOPOTENTIALS/*
+pwscf.save/*
+chargedens-px.dat
+pwscf.xml
+*.swp
 
 # C extensions
 *.so
