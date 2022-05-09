@@ -2,14 +2,13 @@
 from os import listdir, mkdir
 from os.path import exists, join
 import numpy as np
-from utils import simpson_ndarray as simpson
-from utils import realspace_grid_init, apostrophe_remover
-from utils import constant_book, qe_cell, constant_book, qe_float
-from utils import struc_fact, pwscf_parser
-from upf_reader import UPF
+from .utils import simpson_ndarray as simpson
+from .utils import realspace_grid_init, apostrophe_remover
+from .utils import constant_book, qe_cell, constant_book, qe_float
+from .utils import struc_fact, pwscf_parser
+from .upf_reader import UPF
 from scipy.io import FortranFile
 import time
-from meshplot import mesh_plot
 
 constants = constant_book()
 
@@ -57,7 +56,7 @@ def atomic_rho_g(ngm, ngl, gl, ntyp, upfs, cell, strf, nspina=1):
 
    
 
-class RhoInit():
+class SAD():
     '''
     generate SAD charge density from pwscf.in file
     adapted from PW/src/run_pwscf.f90
@@ -169,14 +168,3 @@ class RhoInit():
         rhor = np.fft.ifftn(rhog).real *self.cell.omega#/( self.nr1* self.nr2* self.nr3)
         return rhor
 
-
-        
-
-
-if __name__ == '__main__':
-    start = time.time()
-    pwscfin = RhoInit('pwscf.in')
-    print(pwscfin.mill_g[:100])
-    c = pwscfin.read_charge('chargedens-px.dat')
-    pwscfin.saverhog(join(pwscfin.save_folder, 'charge-density.dat'))
- 

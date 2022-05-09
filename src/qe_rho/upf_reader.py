@@ -2,7 +2,7 @@ from xml.etree import ElementTree as ET
 from os.path import join
 from os import listdir
 import numpy as np
-from utils import simpson_ndarray as simpson
+from .utils import simpson_ndarray as simpson
 
 
 class UPF(dict):
