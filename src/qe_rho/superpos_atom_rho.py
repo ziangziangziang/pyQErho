@@ -8,7 +8,6 @@ from .utils import constant_book, qe_cell, constant_book, qe_float
 from .utils import struc_fact, pwscf_parser
 from .upf_reader import UPF
 from scipy.io import FortranFile
-import time
 
 constants = constant_book()
 
@@ -79,9 +78,6 @@ class SAD():
         self.gamma_only = 0
         self.nspin = 1
 
-        if not exists(self.save_folder):
-            mkdir(self.save_folder)
-
         self.upf_order = {}
         self.upf_list = []
         for iele, ele in enumerate(self.pwscfin['ATOMIC_SPECIES']['text']):
@@ -122,23 +118,28 @@ class SAD():
         except KeyError:
             self.ecutrho = 4.0 * self.ecutwfc
 
-        time_start = time.time()
         self.nr1, self.nr2, self.nr3, self.ngm, self.gvect, self.mill_g, self.ngl, self.gl = realspace_grid_init(self.cell.at, self.cell.bg, self.ecutrho/self.cell.tpiba2)
 
-        time_start = time.time()
         self.strf = struc_fact(self.nat, self.tau, self.ntyp, self.ityp, self.nr1, self.nr2, self.nr3, self.cell.bg, self.ngm, self.gvect, self.mill_g)
         self.zp = np.array([self.upfs[self.upf_list[i]].zp*self.ityp[i].__len__() for i in range(self.ntyp)]).sum()
 
-        time_start = time.time()
         self.rhog = atomic_rho_g(self.ngm, self.ngl, self.gl, self.ntyp, [self.upfs[i] for i in self.upf_list], self.cell, self.strf)
 
-    def saverhog(self, chdens_path):
+    def setrhor(self, rhor):
+        rhog = np.fft.fftn(rhor/self.cell.omega)
+        #/(self.nr1 * self.nr2 * self.nr3)
+        self.rhog = rhog[self.mill_g[:, 0], self.mill_g[:, 1], self.mill_g[:, 2]]
+
+    def saverhog(self, chdens_path, chdens_dat='charge-density.dat'):
         rhog = np.empty((self.ngm,2), dtype=np.float)
         rhog[:, 0] = self.rhog.real
         rhog[:, 1] = self.rhog.imag
         rhog.reshape(2*self.ngm)
 
-        f = FortranFile(chdens_path, 'w')
+        if not exist(chdens_path):
+            mkdirs(chdens_path)
+
+        f = FortranFile(join(chdens_path, chdens_dat), 'w')
         f.write_record(np.array([self.gamma_only, self.ngm, self.nspin], dtype=np.int32))
         f.write_record(self.cell.bg*self.cell.tpiba)
         f.write_record((self.mill_g).reshape(self.ngm* 3))
@@ -152,9 +153,9 @@ class SAD():
         # no need to devide the grid size
         return rhor
 
-    def plot(self, output=None, filtering='none'):
-        self.rhor = self.rho_g2r()
-        mesh_plot(self.rhor, a=self.cell.at*self.cell.alat*constants.bohr_radius_angs, output_name=output, filtering=filtering)
+    #def plot(self, output=None, filtering='none'):
+    #    self.rhor = self.rho_g2r()
+    #    mesh_plot(self.rhor, a=self.cell.at*self.cell.alat*constants.bohr_radius_angs, output_name=output, filtering=filtering)
 
     def read_charge(self, path):
         f = FortranFile(path, 'r')
