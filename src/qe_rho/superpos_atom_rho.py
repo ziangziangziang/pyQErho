@@ -61,7 +61,7 @@ class SAD():
     generate SAD charge density from pwscf.in file
     adapted from PW/src/run_pwscf.f90
     '''
-    def __init__(self, pwscfin):
+    def __init__(self, pwscfin, upf_folder=None):
         self.pwscfin = pwscf_parser(pwscfin)
         self.nat = int(self.pwscfin['SYSTEM']['nat'])
         self.ntyp = int(self.pwscfin['SYSTEM']['ntyp'])
@@ -70,7 +70,10 @@ class SAD():
         self.type_atom_dict = {}        # {atom_name: [atom_order, ]}
         self.upf_files = {}              # {atom_name: upf}
         self.upfs = {}         # {atom_name: UPF class}
-        self.upf_folder = apostrophe_remover(self.pwscfin['CONTROL']['pseudo_dir'])
+        if upf_folder:
+            self.upf_folder = upf_folder
+        else:
+            self.upf_folder = apostrophe_remover(self.pwscfin['CONTROL']['pseudo_dir'])
         self.prefix = apostrophe_remover(self.pwscfin['CONTROL']['prefix'])
         self.save_folder = f'{self.prefix}.save'
         self.gamma_only = 0
@@ -159,7 +162,6 @@ class SAD():
 
         bg = f.read_reals(np.float).reshape((3,3))
         miller_g = f.read_ints().reshape((ngm_g, 3))
-        print(miller_g[:100])
 
         rhog_compact = f.read_reals(np.float).reshape([ngm_g, 2]).dot([1.0, 1.0j])
         f.close()
