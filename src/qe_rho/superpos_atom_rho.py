@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from os import listdir, mkdir
+from os import listdir, makedirs
 from os.path import exists, join
 import numpy as np
 from .utils import simpson_ndarray as simpson
@@ -8,8 +8,10 @@ from .utils import constant_book, qe_cell, constant_book, qe_float
 from .utils import struc_fact, pwscf_parser
 from .upf_reader import UPF
 from scipy.io import FortranFile
+from .heapsort import hpsort_eps
 
 constants = constant_book()
+DEBUG = True
 
 
 def atomic_rho_g(ngm, ngl, gl, ntyp, upfs, cell, strf, nspina=1):
@@ -25,6 +27,7 @@ def atomic_rho_g(ngm, ngl, gl, ntyp, upfs, cell, strf, nspina=1):
     
     compute superposition of atomic charges in reciprocal space
     only support nspina = 1 in version 0.1
+    for reference, quantum espresso io module was in Modules/io_base.f90
     '''
     eps8 = constants.eps8
     gl_uniq, gl_uniq_id = np.unique(gl, return_inverse=True)
@@ -135,27 +138,27 @@ class SAD():
         rhog[:, 0] = self.rhog.real
         rhog[:, 1] = self.rhog.imag
         rhog.reshape(2*self.ngm)
+        # first sort before saving
+        indsort = np.lexsort((self.mill_g[:, 2], self.mill_g[:, 1], self.mill_g[:, 0]))
+        # second sort
+        gl, glsort = hpsort_eps(self.gl[indsort])
+        gind = indsort[glsort]
 
-        if not exist(chdens_path):
-            mkdirs(chdens_path)
+        if not exists(chdens_path):
+            makedirs(chdens_path)
 
         f = FortranFile(join(chdens_path, chdens_dat), 'w')
         f.write_record(np.array([self.gamma_only, self.ngm, self.nspin], dtype=np.int32))
         f.write_record(self.cell.bg*self.cell.tpiba)
-        f.write_record((self.mill_g).reshape(self.ngm* 3))
-        f.write_record(rhog)
+        f.write_record((self.mill_g[gind]).reshape(self.ngm* 3))
+        f.write_record(rhog[gind])
         f.close()
     
     def rho_g2r(self):
         rhog = np.zeros((self.nr1, self.nr2, self.nr3), dtype=np.complex128)
         rhog[self.mill_g[:, 0], self.mill_g[:, 1], self.mill_g[:, 2]] = self.rhog
         rhor = np.fft.ifftn(rhog).real *self.cell.omega#/( self.nr1* self.nr2* self.nr3)
-        # no need to devide the grid size
         return rhor
-
-    #def plot(self, output=None, filtering='none'):
-    #    self.rhor = self.rho_g2r()
-    #    mesh_plot(self.rhor, a=self.cell.at*self.cell.alat*constants.bohr_radius_angs, output_name=output, filtering=filtering)
 
     def read_charge(self, path):
         f = FortranFile(path, 'r')
@@ -163,6 +166,15 @@ class SAD():
 
         bg = f.read_reals(np.float).reshape((3,3))
         miller_g = f.read_ints().reshape((ngm_g, 3))
+        if DEBUG:
+            # first sort before saving
+            indsort = np.lexsort((self.mill_g[:, 2], self.mill_g[:, 1], self.mill_g[:, 0]))
+            # second sort
+            gl, glsort = hpsort_eps(self.gl[indsort])
+            gind = indsort[glsort]
+            #gvect = f.read_reals().reshape((ngm_g, 3))
+            for i in range(40):
+                print(miller_g[i]-self.mill_g[gind][i],miller_g[i], self.mill_g[gind][i], self.gl[gind][i],self.gvect[gind][i]*self.cell.tpiba)
 
         rhog_compact = f.read_reals(np.float).reshape([ngm_g, 2]).dot([1.0, 1.0j])
         f.close()

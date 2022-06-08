@@ -34,7 +34,7 @@
 !  tot_charge = +1
 /
 &ELECTRONS
-  electron_maxstep = 20
+  electron_maxstep = 0
 !  conv_thr = 1.d-8
   mixing_mode = 'plain'
   mixing_beta = 7.d-1

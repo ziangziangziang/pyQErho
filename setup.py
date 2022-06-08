@@ -5,9 +5,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="qe-rho-ziang",
-    version="0.0.4",
+    version="0.0.6",
     author="Ziang",
-    author_email="ziang.zhang@kaust.com",
+    author_email="ziang.zhang@kaust.edu.sa",
     description="A package to generate charge density initial guess for Quantum ESPRESSO",
     long_description=long_description,
     long_description_content_type="text/markdown",

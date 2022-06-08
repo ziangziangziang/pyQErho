@@ -53,7 +53,6 @@ def pwscf_parser(file_path: str):
     with open(file_path, 'r') as f:
         pwscf_lines = f.readlines()
 
-    pwscfin['readlines'] = pwscf_lines
     for line in pwscf_lines:
         line = line.strip()
         if line.startswith('!') or line.startswith('/') or line=='':
@@ -126,6 +125,28 @@ def simpson(mesh:int, func:np.ndarray, rab:np.ndarray):
         f3 = func[i+1] * rab[i+1] * r12
         asum += f1 + 4*f2 + f3
     return asum
+
+def hpsort_eps(ra,eps=1e-8):
+    '''
+    adapted from Modules/sort.f90
+    to sort the miller indices by length of g-vector
+    have to sort miller indices so QE can accept the charge density
+    input: ra, 1-D array
+    '''
+    n = ra.shape[0]
+    l = n//2 + 1
+    ir = n
+    ind = np.arange(n)
+    while True:
+        if l > 1:
+            l = l-1
+            rra = ra[l]
+            iind = ind[l]
+
+        else:
+            # clear a s
+            pass
+
 
 class qe_cell():
     '''
@@ -267,58 +288,43 @@ def realspace_grid_init(at, bg, gcutm):
 def grid_set(nr1, nr2, nr3, bg, gcut, nproc=1, mype=0):
     '''
     FFTXlib/fft_types.f90
+    returns in nr1, nr2, nr3 the minumal 3d real-space fft grid
     required to fit the G-vector spaere with G^2<=gcut
     '''
-    # g_indices are halven in nr3 to save calculation
-    if False:
-        g_indices = (np.indices((2*nr1+1, 2*nr2+1, 2*nr3+1)).transpose((1,2,3,0)) - np.array((nr1, nr2, nr3)))
-        g_index = g_indices.transpose(3, 0, 1, 2)
-        g = np.matmul(g_indices, bg)
-        print(g_indices[nr1, nr2+1, nr3-1])
-        print(g[nr1, nr2+1, nr3-1])
-        g_length = np.square(g).sum(-1)
+    g_indices = np.indices((2*nr1+1, 2*nr2+1, nr3+1)).transpose((1,2,3,0)) - np.array((nr1, nr2, 0))
+    g_index = g_indices.transpose(3, 0, 1, 2)
+    g = np.matmul(g_indices, bg)
+    g_length = np.square(g).sum(-1)
 
-        # get g-vector within half sphere
-        g_ind = np.argwhere(g_length<=gcut)
-        gvect = g[g_ind]
 
-        # restore full-size ngm
-        ngm = gvect.shape[0]
+    g_mask = np.where(g_length<=gcut, 1, 0)
+    g_ix, g_iy, g_iz = np.abs(g_index * g_mask)
 
-        mill = g_ind - np.array((nr1, nr2, nr3))
-        print(mill.shape)
-        print(mill[10:])
-        gg = g_length[g_ind]
+    ngm = np.count_nonzero(g_mask)+np.count_nonzero(g_iz)
+    g_mask_nonzero = np.nonzero(g_mask)
+    g_iz_nonzero = np.nonzero(g_iz)
+    ngm = g_mask_nonzero[0].shape[0] + g_iz_nonzero[0].shape[0]
 
-        g_ix = np.abs(mill)[:, 0]
-        g_iy = np.abs(mill)[:, 1]
-        g_iz = np.abs(mill)[:, 2]
-    if True:
-        g_indices = (np.indices((2*nr1+1, 2*nr2+1, nr3+1)).transpose((1,2,3,0)) - np.array((nr1, nr2, 0)))
-        g_index = g_indices.transpose(3, 0, 1, 2)
-        g = np.matmul(g_indices, bg)
-        g_length = np.square(g).sum(-1)
+    gvect = np.empty((ngm, 3))
+    mill = np.empty((ngm, 3), dtype=np.int32)
+    gg = np.empty(ngm)
+    gvect[:g_mask_nonzero[0].shape[0]] = g[g_mask_nonzero]
+    gvect[g_mask_nonzero[0].shape[0]:] = g[g_iz_nonzero] * np.array((1, 1, -1))
 
-        # get g-vector within half sphere
-        g_mask = np.where(g_length<=gcut, 1, 0)
-        g_ix, g_iy, g_iz = np.abs(g_index * g_mask)
+    mill[:g_mask_nonzero[0].shape[0]] = g_indices[g_mask_nonzero]
+    mill[g_mask_nonzero[0].shape[0]:] = g_indices[g_iz_nonzero]* np.array((1, 1, -1))
+    gg[:g_mask_nonzero[0].shape[0]] = g_length[g_mask_nonzero]
+    gg[g_mask_nonzero[0].shape[0]:] = g_length[g_iz_nonzero]
 
-        # restore full-size ngm
-        ngm = np.count_nonzero(g_mask)+np.count_nonzero(g_iz)
-        g_mask_nonzero = np.nonzero(g_mask)
-        g_iz_nonzero = np.nonzero(g_iz)
-        ngm = g_mask_nonzero[0].shape[0] + g_iz_nonzero[0].shape[0]
+    # sort mill, gvect, gg
+    #gg = np.flip(gg)
+    #mill = np.flip(mill)
+    #gvect = np.flip(gvect)
+    #ind_sort = np.argsort(gg, kind='heapsort')
+    #gg = gg[ind_sort]
+    #mill = mill[ind_sort]
+    #gvect = gvect[ind_sort]
 
-        gvect = np.empty((ngm, 3))
-        mill = np.empty((ngm, 3), dtype=np.int32)
-        gg = np.empty(ngm)
-        gvect[:g_mask_nonzero[0].shape[0]] = g[g_mask_nonzero]
-        gvect[g_mask_nonzero[0].shape[0]:] = g[g_iz_nonzero] * np.array((-1, -1, -1))
-
-        mill[:g_mask_nonzero[0].shape[0]] = g_indices[g_mask_nonzero]
-        mill[g_mask_nonzero[0].shape[0]:] = g_indices[g_iz_nonzero]* np.array((-1, -1, -1))
-        gg[:g_mask_nonzero[0].shape[0]] = g_length[g_mask_nonzero]
-        gg[g_mask_nonzero[0].shape[0]:] = g_length[g_iz_nonzero]
 
     nb1 = g_ix.max()
     nb2 = g_iy.max()
