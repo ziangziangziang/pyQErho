@@ -1,10 +1,13 @@
 # qeRho
 
-The module is to generate the initial guess charge density for quantum-espresso _pwscf_ calculations. Currently the module supports `nspin=1`, binary output (no HDF5 supported). The output charge density should be sorted in next subversion.
+
+
+The module is to generate a charge density file `charge-density.dat` for quantum espresso to read.
+
 ## to install
 
 ```
-pip install ./
+pip install qe_rho
 ```
 
 ## to use
@@ -16,12 +19,16 @@ from qe_rho import SAD
 # initialize SAD density
 rho = SAD('tests/pwscf.in')
 
-# output real-space charge density
-rhor = rho.rho_g2r()
+# save charge-density.dat to folder pwscf.save
+rho.saverhog('pwscf.save')
 
-# save quantum espresso readable charge density
-rho.saverhog('charge-density.dat')
+# output real-space charge density in a 3D numpy array
+rhor = rho.rho_g2r()
 ```
+
+## TODO
+- [ ] HDF5 support
+- [ ] spin support
 
 
 
