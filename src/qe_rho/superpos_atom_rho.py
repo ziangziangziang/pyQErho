@@ -11,7 +11,7 @@ from scipy.io import FortranFile
 from .heapsort import hpsort_eps
 
 constants = constant_book()
-DEBUG = True
+DEBUG = False
 
 
 def atomic_rho_g(ngm, ngl, gl, ntyp, upfs, cell, strf, nspina=1):

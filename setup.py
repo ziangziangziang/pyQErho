@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="qe-rho",
-    version="1.0.0",
+    version="1.0.1",
     author="Ziang",
     author_email="ziang.zhang@kaust.edu.sa",
     description="A package to generate charge-density.dat for Quantum ESPRESSO",
