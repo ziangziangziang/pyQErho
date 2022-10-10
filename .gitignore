@@ -9,7 +9,6 @@ pwscf.save/*
 chargedens-px.dat
 pwscf.xml
 *.swp
-*.png
 
 
 # C extensions
