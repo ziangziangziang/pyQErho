@@ -1,20 +1,22 @@
 # qeRho
 
+This Python module reads _QuantumEspresso_ input file and generate a electronic charge density by _super-positioning atom density_ method.
+
+The generated charge density file `charge-density.dat` can be loaded by _QuantumEspresso_ directly.
 
 
-The module is to generate a charge density file `charge-density.dat` for quantum espresso to read.
+## Get Starded
 
-## to install
+### How to install the module
 
 ```
 pip install qe_rho
 ```
 
-## to use
+### How to generate charge density
 
 ```
-# import superposition of atomic density
-from qe_rho import SAD
+from qe_rho import SAD # super-positioning of atom densities
 
 # initialize SAD density
 rho = SAD('tests/pwscf.in')
@@ -26,9 +28,9 @@ rho.saverhog('pwscf.save')
 rhor = rho.rho_g2r()
 ```
 
-## TODO
-- [ ] HDF5 support
-- [ ] spin support
+You can visualize the charge density with `tests/meshplot.py`:
+
+![RESULT](/tests/my.png)
 
 
 
