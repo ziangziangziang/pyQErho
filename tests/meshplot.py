@@ -97,7 +97,8 @@ def mesh_plot(data, output_name=None, filtering='none', title='none', a=np.ident
             facecolors=explode(fcolors))
     m = cm.ScalarMappable(cmap = plt.cm.plasma, norm=norm)
     m.set_array([])
-    plt.colorbar(m, label='charge density', ticks=[data.max(), data.min()])
+    plt.colorbar(m, label='charge density', ticks=[data.max(), data.min()], orientation='horizontal')
+    plt.tight_layout()
     if output_name:
         plt.savefig(output_name, dpi=300)
     else:
